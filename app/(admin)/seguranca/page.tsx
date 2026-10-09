@@ -1,0 +1,10 @@
+import { changePasswordAction, logoutAction } from '@/actions/auth'
+import { LogoutIcon, ShieldIcon } from '@/components/icons'
+import { SubmitButton } from '@/components/submit-button'
+import { requireUser } from '@/lib/auth'
+import { formatDate } from '@/lib/utils'
+
+export default async function SecurityPage() {
+  const { user, profile } = await requireUser()
+  return <div className="page-stack"><div className="page-heading"><div><span className="eyebrow">CONTA</span><h1>Segurança</h1><p>Sessão autenticada e dados protegidos no banco por RLS.</p></div></div><div className="two-column"><section className="panel detail-list"><div className="panel-heading"><div><span className="eyebrow">SESSÃO</span><h2>Conta atual</h2></div><ShieldIcon /></div><dl><div><dt>E-mail</dt><dd>{user.email || profile.email}</dd></div><div><dt>Função</dt><dd>{profile.role.replace('_', ' ')}</dd></div><div><dt>Status</dt><dd>{profile.is_active ? 'Ativa' : 'Inativa'}</dd></div><div><dt>Último login registrado</dt><dd>{formatDate(profile.last_login_at)}</dd></div></dl><form action={logoutAction}><button className="button button-secondary" type="submit"><LogoutIcon width={17}/>Encerrar sessão</button></form></section><form action={changePasswordAction} className="form-card compact-form"><div className="form-section-heading"><div><span className="eyebrow">CREDENCIAL</span><h2>Alterar senha</h2></div></div><label className="field"><span>Nova senha</span><input name="password" type="password" minLength={10} maxLength={200} required autoComplete="new-password" /></label><label className="field"><span>Confirmar nova senha</span><input name="confirm_password" type="password" minLength={10} maxLength={200} required autoComplete="new-password" /></label><SubmitButton>Atualizar senha</SubmitButton></form></div><div className="security-note"><strong>MFA/TOTP</strong><span>A arquitetura está preparada para a próxima fase. Não exibimos um botão de MFA nesta V1 até implementarmos o fluxo completo de cadastro, verificação e recuperação — evitando um controle decorativo ou incompleto.</span></div></div>
+}

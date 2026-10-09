@@ -1,0 +1,24 @@
+import Link from 'next/link'
+import { notFound } from 'next/navigation'
+import { toggleDynamicLinkAction } from '@/actions/links'
+import { CopyButton } from '@/components/copy-button'
+import { Flash } from '@/components/flash'
+import { StatusBadge } from '@/components/status-badge'
+import { requireUser } from '@/lib/auth'
+import { destinationLabels, formatDate, getPublicLink } from '@/lib/utils'
+import type { DestinationType } from '@/types/supabase'
+
+type DestinationHistoryRow = { id: number; previous_type: DestinationType; new_type: DestinationType; previous_url: string; new_url: string; changed_at: string }
+
+export default async function LinkDetailPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ error?: string; success?: string }> }) {
+  const { id } = await params
+  const q = await searchParams
+  const { supabase } = await requireUser()
+  const [{ data: link }, { data: history }] = await Promise.all([
+    supabase.from('dynamic_links').select('*,clients(id,name,company)').eq('id', id).maybeSingle(),
+    supabase.from('dynamic_link_history').select('id,previous_type,new_type,previous_url,new_url,changed_at').eq('link_id', id).order('changed_at', { ascending: false }).limit(20),
+  ])
+  if (!link) notFound()
+  const publicUrl = getPublicLink(link.public_code)
+  return <div className="page-stack"><div className="page-heading"><div><span className="eyebrow">{link.internal_code}</span><h1>{link.clients?.company || link.clients?.name || 'Link dinâmico'}</h1><p>{destinationLabels[link.destination_type]} · criado em {formatDate(link.created_at)}</p></div><div className="heading-actions"><Link className="button button-secondary" href={`/links/${id}/editar`}>Editar destino</Link><a className="button button-primary" href={publicUrl} target="_blank" rel="noreferrer">Testar link</a></div></div><Flash error={q.error} success={q.success} /><div className="two-column link-detail-grid"><section className="panel qr-panel"><div className="panel-heading"><div><span className="eyebrow">QR PERMANENTE</span><h2>Pronto para produção</h2></div><StatusBadge active={link.active} /></div><div className="qr-frame"><img src={`/api/qr/${encodeURIComponent(link.public_code)}?format=svg`} alt={`QR Code ${link.internal_code}`} /></div><div className="permanent-url"><span>URL permanente</span><code>{publicUrl}</code></div><div className="button-grid"><CopyButton value={publicUrl} /><a className="button button-secondary" href={`/api/qr/${encodeURIComponent(link.public_code)}?format=png&download=1`}>Baixar PNG</a><a className="button button-secondary" href={`/api/qr/${encodeURIComponent(link.public_code)}?format=svg&download=1`}>Baixar SVG</a></div><p className="microcopy">Esta URL permanente pode ser reutilizada em qualquer meio compatível. O destino continua sendo controlado somente por este painel.</p></section><section className="panel detail-list"><div className="panel-heading"><div><span className="eyebrow">DESTINO ATUAL</span><h2>{destinationLabels[link.destination_type]}</h2></div></div><dl><div><dt>Código público</dt><dd className="mono">{link.public_code}</dd></div><div><dt>Acessos</dt><dd>{link.access_count}</dd></div><div><dt>Último acesso</dt><dd>{formatDate(link.last_access_at)}</dd></div><div><dt>Atualizado</dt><dd>{formatDate(link.updated_at)}</dd></div></dl><div className="destination-box"><span>Destino</span><a href={link.destination_url} target="_blank" rel="noreferrer">{link.destination_url}</a></div>{link.notes && <div className="notes-box"><strong>Observações</strong><p>{link.notes}</p></div>}<form action={toggleDynamicLinkAction} className="danger-zone"><input type="hidden" name="id" value={id}/><input type="hidden" name="next_active" value={String(!link.active)}/><div><strong>{link.active ? 'Pausar redirecionamento' : 'Reativar redirecionamento'}</strong><span>{link.active ? 'O QR deixará de redirecionar até ser reativado.' : 'O mesmo QR voltará a funcionar.'}</span></div><button className={`button ${link.active ? 'button-danger' : 'button-primary'}`} type="submit">{link.active ? 'Pausar' : 'Reativar'}</button></form></section></div><section className="panel"><div className="panel-heading"><div><span className="eyebrow">AUDITORIA DO DESTINO</span><h2>Histórico de alterações</h2></div></div>{!history?.length ? <div className="empty-state compact"><strong>Nenhuma alteração registrada</strong><p>O histórico aparecerá quando o destino for modificado.</p></div> : <div className="timeline">{(history as DestinationHistoryRow[]).map((h: DestinationHistoryRow) => <article key={h.id}><div className="timeline-dot"/><div><strong>{destinationLabels[h.previous_type]} → {destinationLabels[h.new_type]}</strong><span>{formatDate(h.changed_at)}</span><p><span>De:</span> {h.previous_url}</p><p><span>Para:</span> {h.new_url}</p></div></article>)}</div>}</section></div>
+}
