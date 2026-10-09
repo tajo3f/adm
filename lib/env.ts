@@ -1,15 +1,25 @@
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-const supabasePublishableKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY
+function requirePublicUrl(name: 'NEXT_PUBLIC_SUPABASE_URL') {
+  const value = process.env[name]?.trim()
+  if (!value) throw new Error(`TAJO ADMIN: configure ${name}.`)
+  try {
+    const url = new URL(value)
+    if (url.protocol !== 'https:' && url.hostname !== 'localhost') throw new Error('https required')
+    return url.toString().replace(/\/$/, '')
+  } catch {
+    throw new Error(`TAJO ADMIN: ${name} precisa ser uma URL HTTPS válida.`)
+  }
+}
 
-if (!supabaseUrl || !supabasePublishableKey) {
-  throw new Error(
-    'TAJO ADMIN: configure NEXT_PUBLIC_SUPABASE_URL e NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY.',
-  )
+function requirePublicKey() {
+  const value = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY?.trim()
+  if (!value) throw new Error('TAJO ADMIN: configure NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY.')
+  if (/service[_-]?role|secret/i.test(value)) {
+    throw new Error('TAJO ADMIN: chave privilegiada detectada em variável NEXT_PUBLIC_. Use somente a Publishable Key.')
+  }
+  return value
 }
 
 export const env = {
-  supabaseUrl,
-  supabasePublishableKey,
-  publicRedirectBaseUrl: (process.env.PUBLIC_REDIRECT_BASE_URL || 'https://go.tajodigital.com.br').replace(/\/+$/, ''),
-  adminBaseUrl: (process.env.ADMIN_BASE_URL || 'https://admin.tajodigital.com.br').replace(/\/+$/, ''),
+  supabaseUrl: requirePublicUrl('NEXT_PUBLIC_SUPABASE_URL'),
+  supabasePublishableKey: requirePublicKey(),
 }

@@ -1,13 +1,16 @@
 import type { NextConfig } from 'next'
 
 const supabaseOrigin = (() => {
+  const raw = process.env.NEXT_PUBLIC_SUPABASE_URL
+  if (!raw) return null
   try {
-    return new URL(process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://mgbugxlxqqjutxpnjolu.supabase.co').origin
+    return new URL(raw).origin
   } catch {
-    return 'https://mgbugxlxqqjutxpnjolu.supabase.co'
+    return null
   }
 })()
 
+const connectSrc = ["'self'", ...(supabaseOrigin ? [supabaseOrigin] : [])].join(' ')
 const csp = [
   "default-src 'self'",
   "base-uri 'self'",
@@ -17,11 +20,12 @@ const csp = [
   "script-src 'self' 'unsafe-inline'",
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' data: blob:",
-  `connect-src 'self' ${supabaseOrigin}`,
+  `connect-src ${connectSrc}`,
   "font-src 'self' data:",
   "media-src 'self' blob:",
   "worker-src 'self' blob:",
   "manifest-src 'self'",
+  "upgrade-insecure-requests",
 ].join('; ')
 
 const nextConfig: NextConfig = {
@@ -36,11 +40,11 @@ const nextConfig: NextConfig = {
           { key: 'X-Content-Type-Options', value: 'nosniff' },
           { key: 'X-Frame-Options', value: 'DENY' },
           { key: 'Referrer-Policy', value: 'no-referrer' },
-          { key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=(), payment=()' },
+          { key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=(), payment=(), usb=()' },
           { key: 'Cross-Origin-Opener-Policy', value: 'same-origin' },
           { key: 'Cross-Origin-Resource-Policy', value: 'same-origin' },
           { key: 'Strict-Transport-Security', value: 'max-age=31536000; includeSubDomains' },
-          { key: 'X-Robots-Tag', value: 'noindex, nofollow, noarchive' }
+          { key: 'X-Robots-Tag', value: 'noindex, nofollow, noarchive' },
         ],
       },
     ]

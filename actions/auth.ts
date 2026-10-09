@@ -3,7 +3,7 @@
 import { redirect } from 'next/navigation'
 import { z } from 'zod'
 import { createClient } from '@/lib/supabase/server'
-import { env } from '@/lib/env'
+import { serverEnv } from '@/lib/server-env'
 import { loginSchema, resetPasswordSchema } from '@/lib/validators'
 
 export async function loginAction(formData: FormData) {
@@ -51,7 +51,7 @@ export async function forgotPasswordAction(formData: FormData) {
   if (email.success) {
     const supabase = await createClient()
     await supabase.auth.resetPasswordForEmail(email.data, {
-      redirectTo: `${env.adminBaseUrl}/auth/callback?next=/reset-password`,
+      redirectTo: `${serverEnv.adminBaseUrl}/auth/callback?next=/reset-password`,
     })
   }
 

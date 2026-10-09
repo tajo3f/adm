@@ -9,7 +9,7 @@ export const loginSchema = z.object({
 
 export const resetPasswordSchema = z
   .object({
-    password: z.string().min(10, 'Use pelo menos 10 caracteres').max(200),
+    password: z.string().min(12, 'Use pelo menos 12 caracteres').max(200),
     confirm_password: z.string().max(200),
   })
   .refine((data) => data.password === data.confirm_password, {

@@ -1,3 +1,4 @@
+import { serverEnv } from '@/lib/server-env'
 export function formatDate(value: string | null | undefined) {
   if (!value) return '—'
   return new Intl.DateTimeFormat('pt-BR', { dateStyle: 'short', timeStyle: 'short' }).format(new Date(value))
@@ -9,8 +10,7 @@ export function safeInternalPath(value: string | null | undefined, fallback = '/
 }
 
 export function getPublicLink(code: string) {
-  const base = (process.env.PUBLIC_REDIRECT_BASE_URL || 'https://go.tajodigital.com.br').replace(/\/+$/, '')
-  return `${base}/p/${encodeURIComponent(code)}`
+  return `${serverEnv.publicRedirectBaseUrl}/p/${encodeURIComponent(code)}`
 }
 
 export function isSafeHttpUrl(value: string) {
